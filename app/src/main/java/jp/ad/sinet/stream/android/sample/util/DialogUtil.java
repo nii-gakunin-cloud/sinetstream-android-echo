@@ -1,0 +1,102 @@
+/*
+ * Copyright (c) 2021 National Institute of Informatics
+ *
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+
+package jp.ad.sinet.stream.android.sample.util;
+
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.os.Parcelable;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import jp.ad.sinet.stream.android.sample.R;
+import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
+import jp.ad.sinet.stream.android.sample.ui.main.ErrorDialogFragment;
+
+public class DialogUtil {
+    /**
+     * Helper function to show an ErrorDialog.
+     * Don't forget to implement the interface ErrorDialogFragment#ErrorDialogListener.
+     *
+     * @param activity    the calling Activity
+     * @param errorMessage    an error message to be shown
+     * @param callbackParcelable    optional opaque data
+     * @param isFatal    shall the calling Activity terminate after the message?
+     */
+    public static void showErrorDialog(
+            AppCompatActivity activity,
+            @Nullable String errorMessage,
+            @Nullable Parcelable callbackParcelable,
+            boolean isFatal) {
+        ErrorDialogFragment edf = new ErrorDialogFragment(activity);
+        Bundle bundle = new Bundle();
+        if (errorMessage != null) {
+            bundle.putString(BundleKeys.BUNDLE_KEY_ERROR_MESSAGE, errorMessage);
+        }
+        if (callbackParcelable != null) {
+            bundle.putParcelable(BundleKeys.BUNDLE_KEY_PARCELABLE, callbackParcelable);
+        }
+        bundle.putBoolean(BundleKeys.BUNDLE_KEY_ERROR_FATAL, isFatal);
+        edf.setArguments(bundle);
+        edf.show(activity.getSupportFragmentManager(), "ERROR");
+    }
+
+    public static void showSimpleDialog(
+            AppCompatActivity activity, @NonNull String descriptions, boolean isHtml) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        builder.setTitle(R.string.app_name);
+        builder.setIcon(R.mipmap.ic_launcher);
+        if (isHtml) {
+            builder.setMessage(Html.fromHtml(descriptions, Html.FROM_HTML_MODE_COMPACT));
+        } else {
+            builder.setMessage(descriptions);
+        }
+        builder.setPositiveButton(
+                android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+
+        // Create an AlertDialog object and return it
+        Dialog alertDialog = builder.create();
+
+        // Don't allow user to cancel by touching outside of the dialog.
+        alertDialog.setCancelable(false);
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.show();
+
+        if (isHtml) {
+            TextView tv = (TextView) alertDialog.findViewById(android.R.id.message);
+            if (tv != null) {
+                tv.setMovementMethod(LinkMovementMethod.getInstance());
+            }
+        }
+    }
+}

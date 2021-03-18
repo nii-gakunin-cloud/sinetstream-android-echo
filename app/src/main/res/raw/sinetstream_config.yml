@@ -1,0 +1,76 @@
+service-1:
+  type: mqtt
+  brokers: mqtt.vcp-handson.org
+  tls: true
+  transport: websockets
+  username_pw_set:
+    username: mqtt
+    password: TlQr6657bEWP1zGp
+  topics: test-sinetstream-android-20191021
+  consistency: AT_LEAST_ONCE
+  retain: true
+  client_id: client-sinetstream-android-20191021-1
+mqtt5:
+  # To prevent weird crash, user-specified clientId will be ignored
+  # from sinetstream-android(v1.4.5).
+  client_id: test123    # ignored
+  type: mqtt
+  protocol: DEFAULT
+  brokers: gpu00.suri.co.jp:18884
+    #brokers: 192.168.2.120:8883
+    #brokers:
+    # [ wise64.suri.co.jp:1234, gpu00.suri.co.jp:18884 ]
+    # { wise64.suri.co.jp:1234, gpu00.suri.co.jp:18884 }
+    # wise64.suri.co.jp:1234, gpu00.suri.co.jp:18884
+    #- gpu00.suri.co.jp:18884, wise64.suri.co.jp:1234
+    #- wise64.suri.co.jp:1234, gpu00.suri.co.jp:18884
+  #- gpu00.suri.co.jp:999,wise64.suri.co.jp:1234
+  #brokers:
+  #  - sample1.suri.co.jp:999
+  #  - wise64.suri.co.jp:1234
+  # topic: test-20200821-05
+  #topics: test-20200821-05
+  #topics:
+  #  - topic1, topic2, topic3
+  #  topic1, topic2, topic3
+  topics:
+    - topic1
+    - topic2
+    - topic3
+  qos: 2 #EXACTLY_ONCE
+  consistency: EXACTLY_ONCE
+  value_type: text
+  #value_type: byte_array
+  #value_type: xxx
+  transport: tcp
+  username_pw_set:
+    username: user03
+    password: user03-pass
+  tls:
+    ca_certs: vm00_cacert.crt # Filename under app/assets.
+    certfile: client03.pfx
+    keyfilePassword: 99806b5abc3235178fcc3dcc4d914da1
+    check_hostname: false
+  will_set:
+    topic: "LWT_topic"
+    payload: "LWT_payload"
+    qos: 0
+    retain: false
+  ws_set_options:
+    headers:
+      x-key1: x-value1
+      x-key2: 999
+  data_encryption: true
+  crypto:
+    algorithm: AES
+    key_length: 256 # { 128, 192, 256 }
+    #mode: CBC # { “CBC”, “OFB”, “CTR”, “EAX”, “GCM” }
+    #padding: PKCS5Padding
+    mode: GCM
+    padding: NoPadding
+    password: "0123456789abcdef"
+    key_derivation:
+      #algorithm: PBKDF2WithHmacSHA1
+      algorithm: PBKDF2WithHmacSHA256
+      #salt_bytes: 64   # Unused (to be calculated from blocksize) */
+      iteration: 1000
