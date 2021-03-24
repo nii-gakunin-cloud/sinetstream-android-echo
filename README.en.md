@@ -59,8 +59,8 @@ from the `Broker` via the library and shows its content on GUI.
 
 ## How to use
 
-See section `SAMPLE1 (sinetstream-android-echo)` in 
-[TUTORIAL](https://www.sinetstream.net/docs/tutorial-android/)
+See section `TUTORIAL - STEP1: Run send/recv text (sinetstream-android-echo)` in
+[Quick Start Guide (Android)](https://www.sinetstream.net/docs/tutorial-android/)
 for details.
 
 

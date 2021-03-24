@@ -49,5 +49,6 @@
     <Preference
         app:title="@string/pref_title_crypto"
         app:summary="@string/pref_summary_crypto"
+        app:enabled="false"
         app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.CryptoSettingsFragment"/>
 </PreferenceScreen>

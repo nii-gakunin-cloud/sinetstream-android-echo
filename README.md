@@ -60,8 +60,9 @@ under the License.
 ## 使用例
 
 別紙
-[チュートリアル文書](https://www.sinetstream.net/docs/tutorial-android/)
-のうち、`SAMPLE1 (sinetstream-android-echo)`の項を参照のこと。
+[Android版クイックスタートガイド](https://www.sinetstream.net/docs/tutorial-android/)
+のうち、`チュートリアル - STEP1: テキスト送受信アプリの実行(sinetstream-android-echo)`
+の項を参照のこと。
 
 
 ## ライセンス

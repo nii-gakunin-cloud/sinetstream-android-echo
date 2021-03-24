@@ -34,8 +34,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.preference.PreferenceManager;
 
 import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
@@ -83,12 +83,11 @@ public class LauncherActivity extends AppCompatActivity {
         mSharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
 
-        /*
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setTitle(R.string.activity_name_launcher);
+        /* Use custom Toolbar for flexible setup */
+        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        if (toolbar != null) {
+            setSupportActionBar(toolbar);
         }
-         */
     }
 
     @Override
@@ -163,12 +162,17 @@ public class LauncherActivity extends AppCompatActivity {
     }
 
     private void handleActionAbout() {
-        final String descriptions =
-                "<p>Periodically publishes sensor values via SINETStream network.</p>" +
-                        "<br>" +
-                        "<p>See " +
+        String descriptions = "";
+        descriptions += "<p>Version: " + BuildConfig.VERSION_NAME +
+                        " (" + BuildConfig.BUILD_TYPE + ")" + "</p>";
+        descriptions += "<br>";
+        descriptions += "<p>See " +
                         "<a href=\"https://www.sinetstream.net/\">SINETStream</a> " +
                         "for details.</p>";
+        descriptions += "<br>";
+        descriptions += "<p>" +
+                "<a href=\"https://github.com/nii-gakunin-cloud/sinetstream-android-echo/blob/main/licenses/README.md\">Licensing Information</a>" +
+                "</p>";
 
         DialogUtil.showSimpleDialog(this, descriptions, true);
     }
@@ -206,25 +210,25 @@ public class LauncherActivity extends AppCompatActivity {
 
         String serviceName = getServiceName();
         if (serviceName == null || serviceName.isEmpty()) {
-            showMessage("Please set ServiceName");
+            showMessage(getString(R.string.incomplete_service_settings));
             return;
         }
 
         String topicNames = getTopicNames();
         if (topicNames == null || topicNames.isEmpty()) {
-            showMessage("Please set TopicNames");
+            showMessage(getString(R.string.incomplete_service_settings));
             return;
         }
 
         String brokerAddress = getBrokerAddress();
         if (brokerAddress == null || brokerAddress.isEmpty()) {
-            showMessage("Please set Broker address");
+            showMessage(getString(R.string.incomplete_broker_settings));
             return;
         }
 
         String port = getBrokerListenPort();
         if (port == null || port.isEmpty()) {
-            showMessage("Please set Broker listen port");
+            showMessage(getString(R.string.incomplete_broker_settings));
             return;
         }
 
