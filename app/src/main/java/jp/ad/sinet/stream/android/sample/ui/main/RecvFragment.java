@@ -33,6 +33,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.Arrays;
 
@@ -55,6 +57,7 @@ public class RecvFragment extends Fragment {
     private SinetStreamReaderString mSinetStreamReader = null;
     //private SinetStreamReaderBytes mSinetStreamReader = null;
     private RecvFragment.RecvFragmentListener mListener;
+    private LinearLayoutManager mLinearLayoutManager;
     // private MainViewModel mViewModel;
     private final DateTimeUtil mDateTimeUtil = new DateTimeUtil();
 
@@ -154,7 +157,32 @@ public class RecvFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         Log.d(TAG, "onCreateView: savedInstanceState=" + savedInstanceState);
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_receiver, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_receiver, container, false);
+        RecyclerView recyclerView = rootView.findViewById(R.id.timeLine);
+        if (recyclerView != null) {
+            // Set the adapter
+            Context context = recyclerView.getContext();
+
+            /*
+             * LinearLayoutManager.ReverseLayout: false (default)
+             *   1    |
+             *   2    | stack downwards
+             *   3    V
+             *
+             * LinearLayoutManager.ReverseLayout: true
+             *   3    A
+             *   2    | stack upwards
+             *   1    |
+             */
+            mLinearLayoutManager = new LinearLayoutManager(context);
+            mLinearLayoutManager.setReverseLayout(true);
+
+            recyclerView.setLayoutManager(mLinearLayoutManager);
+            recyclerView.setAdapter(new MessageAdapter());
+        } else {
+            Log.w(TAG, "onCreateView: RecyclerView (R.id.timeLine) not found?");
+        }
+        return rootView;
     }
 
     @Override
@@ -222,26 +250,34 @@ public class RecvFragment extends Fragment {
             mSinetStreamReader.terminate();
         }
     }
+
     public void onDataReceived(@NonNull String topic,
                                long timestamp,
                                @NonNull Object data) {
         Activity activity = getActivity();
         if (activity instanceof MainActivity) {
-            TextView tv = activity.findViewById(R.id.editText2);
-            if (tv != null) {
-                String message = "Message{" +
-                        "topic(" + topic + "),\n" +
-                        "timestamp(" + mDateTimeUtil.toIso8601String(timestamp) + "),\n";
+            RecyclerView recyclerView =
+                    activity.findViewById(R.id.timeLine);
+            if (recyclerView != null) {
+                MessageAdapter messageAdapter = (MessageAdapter) recyclerView.getAdapter();
+                if (messageAdapter != null) {
+                    String message = "Message{" +
+                            "topic(" + topic + "),\n" +
+                            "timestamp(" + mDateTimeUtil.toIso8601String(timestamp) + "),\n";
 
-                if (data instanceof String) {
-                    String strval = (String) data;
-                    message += "data(" + strval + ")";
-                } else if (data instanceof byte[]) {
-                    byte[] bytes = (byte[]) data;
-                    message += "data(" + bytes.length + ")" + Arrays.toString(bytes);
+                    if (data instanceof String) {
+                        String strval = (String) data;
+                        message += "data(" + strval + ")";
+                    } else if (data instanceof byte[]) {
+                        byte[] bytes = (byte[]) data;
+                        message += "data(" + bytes.length + ")" + Arrays.toString(bytes);
+                    }
+                    message += "}";
+                    messageAdapter.addMessage(message);
+                    scrollToBottom();
+                } else {
+                    mListener.onError(TAG + ": MessageAdapter not yet set?");
                 }
-                message += "}";
-                tv.setText(message);
             }
         }
     }
@@ -249,10 +285,37 @@ public class RecvFragment extends Fragment {
     public void clearDisplay() {
         Activity activity = getActivity();
         if (activity instanceof MainActivity) {
-            TextView tv = activity.findViewById(R.id.editText2);
-            if (tv != null) {
-                tv.setText("");
+            RecyclerView recyclerView =
+                    activity.findViewById(R.id.timeLine);
+            if (recyclerView != null) {
+                MessageAdapter messageAdapter = (MessageAdapter) recyclerView.getAdapter();
+                if (messageAdapter != null) {
+                    messageAdapter.clearAllMessage();
+                } else {
+                    mListener.onError(TAG + ": MessageAdapter not yet set?");
+                }
             }
+        }
+    }
+
+    public void scrollToBottom() {
+        /* Perform auto-scroll to the bottom */
+        Activity activity = getActivity();
+        if (activity != null) {
+            RecyclerView recyclerView =
+                    activity.findViewById(R.id.timeLine);
+            if (recyclerView != null) {
+                //LinearLayoutManager llm = (LinearLayoutManager) recyclerView.getLayoutManager();
+                LinearLayoutManager llm = mLinearLayoutManager;
+                int lastVisibleItemPosition = llm.findLastVisibleItemPosition();
+                int lastItemPosition = llm.getItemCount() - 1;
+
+                if (lastVisibleItemPosition < lastItemPosition) {
+                    recyclerView.scrollToPosition(lastItemPosition);
+                }
+            }
+        } else {
+            Log.e(TAG, "scrollToBottom: Activity not found?");
         }
     }
 

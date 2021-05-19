@@ -26,6 +26,9 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,7 +39,6 @@ import androidx.fragment.app.FragmentTransaction;
 import jp.ad.sinet.stream.android.sample.net.SinetStreamReaderString;
 import jp.ad.sinet.stream.android.sample.net.SinetStreamWriterString;
 import jp.ad.sinet.stream.android.sample.ui.main.ErrorDialogFragment;
-import jp.ad.sinet.stream.android.sample.ui.main.InProgressDialogFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.RecvFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.SendFragment;
 import jp.ad.sinet.stream.android.sample.util.DialogUtil;
@@ -45,7 +47,6 @@ import jp.ad.sinet.stream.android.sample.util.DialogUtil;
 // import jp.ad.sinet.stream.android.sample.net.SinetStreamWriterBytes;
 
 public class MainActivity extends AppCompatActivity implements
-        InProgressDialogFragment.ProgressDialogListener,
         ErrorDialogFragment.ErrorDialogListener,
         SinetStreamWriterString.SinetStreamWriterStringListener,
         SinetStreamReaderString.SinetStreamReaderStringListener,
@@ -57,7 +58,6 @@ public class MainActivity extends AppCompatActivity implements
     private final String SEND_FRAGMENT = SendFragment.class.getSimpleName();
     private final String RECV_FRAGMENT = RecvFragment.class.getSimpleName();
 
-    private InProgressDialogFragment mInProgressDialogFragment = null;
     private boolean mIsWriterAvailable = false;
     private boolean mIsReaderAvailable = false;
 
@@ -132,11 +132,7 @@ public class MainActivity extends AppCompatActivity implements
             recvFragment.startReader();
         }
 
-        mInProgressDialogFragment =
-                new InProgressDialogFragment(
-                        getString(R.string.dialog_title_connecting));
-        mInProgressDialogFragment.show(
-                getSupportFragmentManager(), null);
+        toggleProgressBar(true);
     }
 
     @Override
@@ -172,17 +168,22 @@ public class MainActivity extends AppCompatActivity implements
 
         if (available) {
             if (mIsWriterAvailable) {
-                if (mInProgressDialogFragment != null) {
-                    mInProgressDialogFragment.dismiss();
-                    mInProgressDialogFragment = null;
-                }
-            }
-
-            RecvFragment recvFragment = lookupRecvFragment();
-            if (recvFragment != null) {
-                recvFragment.clearDisplay();
+                toggleProgressBar(false);
             }
         }
+
+        /*
+         * If this Activity has recreated by the system (i.e. onCreate was
+         * called with non-null savedInstanceState), the whole View tree
+         * will be restored.
+         * In this case, showing the previous contents, instead of clearing
+         * the display, looks natural and preferable.
+         *
+        RecvFragment recvFragment = lookupRecvFragment();
+        if (recvFragment != null) {
+            recvFragment.clearDisplay();
+        }
+         */
     }
 
 //    /**
@@ -229,16 +230,13 @@ public class MainActivity extends AppCompatActivity implements
 
         if (available) {
             if (mIsReaderAvailable) {
-                if (mInProgressDialogFragment != null) {
-                    mInProgressDialogFragment.dismiss();
-                    mInProgressDialogFragment = null;
-                }
+                toggleProgressBar(false);
             }
+        }
 
-            SendFragment sendFragment = lookupSendFragment();
-            if (sendFragment != null) {
-                sendFragment.toggleSendButton(available);
-            }
+        SendFragment sendFragment = lookupSendFragment();
+        if (sendFragment != null) {
+            sendFragment.toggleSendButton(available);
         }
     }
 
@@ -279,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements
         /* Implementation of RecvFragmentListener.onError */
         Log.e(TAG, "onError: " + message);
 
+        toggleProgressBar(false);
         DialogUtil.showErrorDialog(
                 this, message, null, true);
 
@@ -292,20 +291,29 @@ public class MainActivity extends AppCompatActivity implements
     public void onErrorDialogDismissed(
             @Nullable Parcelable parcelable, boolean isFatal) {
         /* Implementation of ErrorDialogFragment.onErrorDialogDismissed */
-        if (mInProgressDialogFragment != null) {
-            mInProgressDialogFragment.dismiss();
-            mInProgressDialogFragment = null;
-        }
 
+        toggleProgressBar(false);
         if (isFatal) {
             Log.i(TAG, "Going to finish myself...");
             finish();
         }
     }
 
-    @Override
-    public void onCanceled() {
-        /* Implementation of InProgressDialogFragment.ProgressDialogListener */
-        Log.d(TAG, "onCanceled");
+    private void toggleProgressBar(boolean enabled) {
+        /*
+         * Swap ProgressBar and Sender/Receiver container
+         */
+        LinearLayout progressBar = findViewById(R.id.progressBar);
+        if (progressBar != null) {
+            progressBar.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        }
+        FrameLayout senderContainer = findViewById(R.id.senderContainer);
+        if (senderContainer != null) {
+            senderContainer.setVisibility(enabled ? View.GONE : View.VISIBLE);
+        }
+        FrameLayout receiverContainer = findViewById(R.id.receiverContainer);
+        if (receiverContainer != null) {
+            receiverContainer.setVisibility(enabled ? View.GONE : View.VISIBLE);
+        }
     }
 }

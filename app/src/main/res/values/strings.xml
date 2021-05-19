@@ -37,6 +37,7 @@
     <string name="pref_summary_service">Service attributes</string>
     <string name="pref_key_service_name">service_name</string>
     <string name="pref_item_service_name">Service Name</string>
+    <string name="pref_default_service_name">default-service</string>
     <string name="pref_key_service_topics">service_topics</string>
     <string name="pref_item_service_topics">Topic Name</string>
     <string name="pref_key_service_consistency">service_consistency</string>

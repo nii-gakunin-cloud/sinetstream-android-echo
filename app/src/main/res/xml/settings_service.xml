@@ -30,6 +30,8 @@
             app:key="@string/pref_key_service_name"
             app:title="@string/pref_item_service_name"
             app:useSimpleSummaryProvider="true"
+            app:defaultValue="@string/pref_default_service_name"
+            app:selectable="false"
             app:dialogTitle="@string/pref_item_service_name"/>
 
         <EditTextPreference

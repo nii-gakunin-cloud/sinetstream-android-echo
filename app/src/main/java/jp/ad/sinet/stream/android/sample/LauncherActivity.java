@@ -84,7 +84,7 @@ public class LauncherActivity extends AppCompatActivity {
                 PreferenceManager.getDefaultSharedPreferences(this);
 
         /* Use custom Toolbar for flexible setup */
-        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         if (toolbar != null) {
             setSupportActionBar(toolbar);
         }
