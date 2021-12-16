@@ -40,10 +40,9 @@ import androidx.fragment.app.Fragment;
 // import java.nio.charset.Charset;
 import java.util.Arrays;
 
+import jp.ad.sinet.stream.android.api.SinetStreamWriterString;
 import jp.ad.sinet.stream.android.sample.R;
-// import jp.ad.sinet.stream.android.sample.net.SinetStreamWriterBytes;
 import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
-import jp.ad.sinet.stream.android.sample.net.SinetStreamWriterString;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -281,9 +280,9 @@ public class SendFragment extends Fragment {
         super.onStop();
     }
 
-    public void startWriter() {
+    public void startWriter(@Nullable String alias) {
         if (mSinetStreamWriter != null) {
-            mSinetStreamWriter.initialize(mServiceName);
+            mSinetStreamWriter.initialize(mServiceName, alias);
         }
     }
 

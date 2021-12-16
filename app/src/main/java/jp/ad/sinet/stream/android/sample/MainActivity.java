@@ -21,8 +21,12 @@
 
 package jp.ad.sinet.stream.android.sample;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.util.Log;
 import android.view.MenuItem;
@@ -35,16 +39,18 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.preference.PreferenceManager;
 
-import jp.ad.sinet.stream.android.sample.net.SinetStreamReaderString;
-import jp.ad.sinet.stream.android.sample.net.SinetStreamWriterString;
+import jp.ad.sinet.stream.android.api.SinetStreamReaderString;
+import jp.ad.sinet.stream.android.api.SinetStreamWriterString;
+import jp.ad.sinet.stream.android.net.cert.KeyChainHandler;
+import jp.ad.sinet.stream.android.sample.constants.ActivityCodes;
+import jp.ad.sinet.stream.android.sample.ui.main.EchoViewModel;
 import jp.ad.sinet.stream.android.sample.ui.main.ErrorDialogFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.RecvFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.SendFragment;
 import jp.ad.sinet.stream.android.sample.util.DialogUtil;
-
-// import jp.ad.sinet.stream.android.sample.net.SinetStreamReaderBytes;
-// import jp.ad.sinet.stream.android.sample.net.SinetStreamWriterBytes;
 
 public class MainActivity extends AppCompatActivity implements
         ErrorDialogFragment.ErrorDialogListener,
@@ -58,13 +64,25 @@ public class MainActivity extends AppCompatActivity implements
     private final String SEND_FRAGMENT = SendFragment.class.getSimpleName();
     private final String RECV_FRAGMENT = RecvFragment.class.getSimpleName();
 
+    private EchoViewModel mViewModel = null;
     private boolean mIsWriterAvailable = false;
     private boolean mIsReaderAvailable = false;
+
+    private SharedPreferences mSharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mSharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(this);
+
+        /*
+         * Keep some attributes beyond Activity's lifecycle.
+         */
+        mViewModel = new ViewModelProvider(this).
+                get(EchoViewModel.class);
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -73,7 +91,10 @@ public class MainActivity extends AppCompatActivity implements
             actionBar.setHomeButtonEnabled(true); // onOptionsItemSelected
         }
 
-        if (savedInstanceState == null) {
+        if (savedInstanceState != null) {
+            /* Avoid creating the same fragment sets more than once. */
+            Log.d(TAG, "onCreate: After RESTART");
+        } else {
             /*
              * In case this activity was started with special instructions from an
              * Intent, pass the Intent's extras to the fragment as arguments
@@ -96,6 +117,21 @@ public class MainActivity extends AppCompatActivity implements
 
             transaction.commit();
         }
+    }
+
+    private boolean getPrefsToggleSslTls() {
+        String key = getString(R.string.pref_key_toggle_tls);
+        return mSharedPreferences.getBoolean(key, false);
+    }
+
+    private boolean getPrefsServerCertificates() {
+        String key = getString(R.string.pref_key_tls_server_certs);
+        return mSharedPreferences.getBoolean(key, false);
+    }
+
+    private boolean getPrefsClientCertificates() {
+        String key = getString(R.string.pref_key_tls_client_certs);
+        return mSharedPreferences.getBoolean(key, false);
     }
 
     @Nullable
@@ -123,15 +159,55 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "onStart");
         super.onStart();
 
+        if (getPrefsToggleSslTls()) {
+            /* Use SSL/TLS */
+            if (getPrefsClientCertificates()) {
+                /* Use Client Certificate */
+                String alias = mViewModel.getPrivateKeyAlias();
+                if (alias != null) {
+                    Log.d(TAG, "Re-use certificate alias: " + alias);
+                    buildFragments(alias);
+                } else {
+                    /* Let user select the client certificate */
+                    KeyChainHandler kch = new KeyChainHandler();
+                    kch.checkCertificate(
+                            MainActivity.this,
+                            new KeyChainHandler.KeyChainListener() {
+                                @Override
+                                public void onPrivateKeyAlias(
+                                        @Nullable String alias) {
+                                    Log.d(TAG, "onPrivateKeyAlias: " + alias);
+                                    mViewModel.setPrivateKeyAlias(alias);
+
+                                    if (alias != null) {
+                                        buildFragments(alias);
+                                    } else {
+                                        onError("Client certificate has not chosen");
+                                    }
+                                }
+                            });
+                }
+            } else {
+                /* Don't use Client Certificate */
+                buildFragments(null);
+            }
+        } else {
+            /* Don't use SSL/TLS */
+            buildFragments(null);
+        }
+    }
+
+    private void buildFragments(@Nullable String alias) {
+        Log.d(TAG, "buildFragments: alias(" + alias + ")");
+
         SendFragment sendFragment = lookupSendFragment();
         if (sendFragment != null) {
-            sendFragment.startWriter();
+            sendFragment.startWriter(alias);
         }
         RecvFragment recvFragment = lookupRecvFragment();
         if (recvFragment != null) {
-            recvFragment.startReader();
+            recvFragment.startReader(alias);
         }
-
         toggleProgressBar(true);
     }
 
@@ -141,11 +217,19 @@ public class MainActivity extends AppCompatActivity implements
 
         SendFragment sendFragment = lookupSendFragment();
         if (sendFragment != null) {
-            sendFragment.stopWriter();
+            /* Prevent timing-dependent NullPointerException */
+            if (mIsWriterAvailable) {
+                sendFragment.stopWriter();
+            }
+            mIsWriterAvailable = false; /* Prevent race condition */
         }
         RecvFragment recvFragment = lookupRecvFragment();
         if (recvFragment != null) {
-            recvFragment.stopReader();
+            /* Prevent timing-dependent NullPointerException */
+            if (mIsReaderAvailable) {
+                recvFragment.stopReader();
+            }
+            mIsReaderAvailable = false; /* Prevent race condition */
         }
         super.onStop();
     }
@@ -168,22 +252,12 @@ public class MainActivity extends AppCompatActivity implements
 
         if (available) {
             if (mIsWriterAvailable) {
+                /* Both Writer and Reader are ready. Stop running progress bar */
                 toggleProgressBar(false);
             }
-        }
 
-        /*
-         * If this Activity has recreated by the system (i.e. onCreate was
-         * called with non-null savedInstanceState), the whole View tree
-         * will be restored.
-         * In this case, showing the previous contents, instead of clearing
-         * the display, looks natural and preferable.
-         *
-        RecvFragment recvFragment = lookupRecvFragment();
-        if (recvFragment != null) {
-            recvFragment.clearDisplay();
+            /* See corresponding comment onWriterStatusChanged(). */
         }
-         */
     }
 
 //    /**
@@ -230,13 +304,37 @@ public class MainActivity extends AppCompatActivity implements
 
         if (available) {
             if (mIsReaderAvailable) {
+                /* Both Writer and Reader are ready. Stop running progress bar */
                 toggleProgressBar(false);
             }
-        }
 
-        SendFragment sendFragment = lookupSendFragment();
-        if (sendFragment != null) {
-            sendFragment.toggleSendButton(available);
+            /*
+             * Mqtt operations such like connect() and disconnect() are asynchronous
+             * requests and take some time until completion.
+             * On Application RESTART case, MainActivity issues disconnect() and
+             * connect() requests without waiting for those completions.
+             * That is, MainActivity may receive a disconnect-complete notification
+             * for the previous disconnect(), followed by a connect-complete
+             * notification for the new connect().
+             *
+             * [Before RESTART]
+             *     ...
+             *     onStop()
+             *       sendFragment.stopWriter()
+             *         disconnect()
+             * ===========================================
+             * [After RESTART]
+             *     onCreate()
+             *     onStart()
+             *                      <-- disconnect-complete
+             *       sendFragment.startWriter()
+             *         connect()
+             *                      <-- connect-complete
+             */
+            SendFragment sendFragment = lookupSendFragment();
+            if (sendFragment != null) {
+                sendFragment.toggleSendButton(available);
+            }
         }
     }
 
@@ -294,26 +392,63 @@ public class MainActivity extends AppCompatActivity implements
 
         toggleProgressBar(false);
         if (isFatal) {
-            Log.i(TAG, "Going to finish myself...");
-            finish();
+            onBackPressed();
         }
+    }
+
+    /**
+     * Called when the activity has detected the user's press of the back
+     * key. The {@link #getOnBackPressedDispatcher() OnBackPressedDispatcher} will be given a
+     * chance to handle the back button before the default behavior of
+     * {@link Activity#onBackPressed()} is invoked.
+     *
+     * @see #getOnBackPressedDispatcher()
+     */
+    @Override
+    public void onBackPressed() {
+        /*
+         * It seems strange, but calling super.onBackPressed() seems to
+         * nullify the setResult() effect.
+         *
+        super.onBackPressed();
+         */
+        Log.i(TAG, "Going to finish myself...");
+        Intent intent = new Intent();
+        intent.putExtra(ActivityCodes.KEY, ActivityCodes.ACTIVITY_CODE_MAIN);
+        setResult(Activity.RESULT_OK, intent);
+        finish();
     }
 
     private void toggleProgressBar(boolean enabled) {
         /*
-         * Swap ProgressBar and Sender/Receiver container
+         * NB:
+         * This method might be called from a non-main thread.
+         * Explicitly specify a looper for the constructor of Handler().
+         *
+         * > ViewRoot$CalledFromWrongThreadException:
+         * > Only the original thread that created a view hierarchy
+         * > can touch its views.
          */
-        LinearLayout progressBar = findViewById(R.id.progressBar);
-        if (progressBar != null) {
-            progressBar.setVisibility(enabled ? View.VISIBLE : View.GONE);
-        }
-        FrameLayout senderContainer = findViewById(R.id.senderContainer);
-        if (senderContainer != null) {
-            senderContainer.setVisibility(enabled ? View.GONE : View.VISIBLE);
-        }
-        FrameLayout receiverContainer = findViewById(R.id.receiverContainer);
-        if (receiverContainer != null) {
-            receiverContainer.setVisibility(enabled ? View.GONE : View.VISIBLE);
-        }
+        final Handler mainHandler = new Handler(Looper.getMainLooper());
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                /*
+                 * Swap ProgressBar and Sender/Receiver container
+                 */
+                LinearLayout progressBar = findViewById(R.id.progressBar);
+                if (progressBar != null) {
+                    progressBar.setVisibility(enabled ? View.VISIBLE : View.GONE);
+                }
+                FrameLayout senderContainer = findViewById(R.id.senderContainer);
+                if (senderContainer != null) {
+                    senderContainer.setVisibility(enabled ? View.GONE : View.VISIBLE);
+                }
+                FrameLayout receiverContainer = findViewById(R.id.receiverContainer);
+                if (receiverContainer != null) {
+                    receiverContainer.setVisibility(enabled ? View.GONE : View.VISIBLE);
+                }
+            }
+        });
     }
 }

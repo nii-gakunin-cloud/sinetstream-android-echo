@@ -28,7 +28,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,14 +35,10 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.Arrays;
-
+import jp.ad.sinet.stream.android.api.SinetStreamReaderString;
 import jp.ad.sinet.stream.android.sample.MainActivity;
 import jp.ad.sinet.stream.android.sample.R;
-// import jp.ad.sinet.stream.android.sample.net.SinetStreamReaderBytes;
 import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
-import jp.ad.sinet.stream.android.sample.net.SinetStreamReaderString;
-import jp.ad.sinet.stream.android.utils.DateTimeUtil;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -59,7 +54,6 @@ public class RecvFragment extends Fragment {
     private RecvFragment.RecvFragmentListener mListener;
     private LinearLayoutManager mLinearLayoutManager;
     // private MainViewModel mViewModel;
-    private final DateTimeUtil mDateTimeUtil = new DateTimeUtil();
 
     public static RecvFragment newInstance() {
         return new RecvFragment();
@@ -239,9 +233,9 @@ public class RecvFragment extends Fragment {
         super.onStop();
     }
 
-    public void startReader() {
+    public void startReader(@Nullable String alias) {
         if (mSinetStreamReader != null) {
-            mSinetStreamReader.initialize(mServiceName);
+            mSinetStreamReader.initialize(mServiceName, alias);
         }
     }
 
@@ -261,19 +255,8 @@ public class RecvFragment extends Fragment {
             if (recyclerView != null) {
                 MessageAdapter messageAdapter = (MessageAdapter) recyclerView.getAdapter();
                 if (messageAdapter != null) {
-                    String message = "Message{" +
-                            "topic(" + topic + "),\n" +
-                            "timestamp(" + mDateTimeUtil.toIso8601String(timestamp) + "),\n";
-
-                    if (data instanceof String) {
-                        String strval = (String) data;
-                        message += "data(" + strval + ")";
-                    } else if (data instanceof byte[]) {
-                        byte[] bytes = (byte[]) data;
-                        message += "data(" + bytes.length + ")" + Arrays.toString(bytes);
-                    }
-                    message += "}";
-                    messageAdapter.addMessage(message);
+                    /* Let MessageAdapter handle the received data presentation */
+                    messageAdapter.addMessage(topic, timestamp, data);
                     scrollToBottom();
                 } else {
                     mListener.onError(TAG + ": MessageAdapter not yet set?");

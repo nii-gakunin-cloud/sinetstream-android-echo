@@ -18,7 +18,6 @@
     <string name="activity_name_main">Main</string>
     <string name="edit_message">Enter a message</string>
     <string name="button_send">Send</string>
-    <string name="empty_data">Empty data</string>
 
     <!-- ErrorDialog -->
     <string name="dialog_title_error">Error</string>
@@ -66,12 +65,21 @@
     <string name="pref_summary_tls">Secure network connection</string>
     <string name="pref_key_toggle_tls">toggle_ssltls</string>
     <string name="pref_item_toggle_tls">Enable SSL/TLS Layer</string>
+    <string name="pref_key_tls_protocol">tls_protocol</string>
+    <string name="pref_item_tls_protocol">SSL/TLS Protocol</string>
+    <string name="pref_default_tls_protocol">TLSv1.2</string>
+    <string name="pref_key_tls_server_certs">tls_server_certs</string>
+    <string name="pref_item_tls_server_certs">Enable Self-Signed Server Certificates</string>
+    <string name="pref_key_tls_client_certs">tls_client_certs</string>
+    <string name="pref_item_tls_client_certs">Enable Client Certificates</string>
+
     <string name="pref_key_tls_ca_certs">tls_ca_certs</string>
     <string name="pref_item_tls_ca_certs">CA Certification Filename</string>
     <string name="pref_key_tls_certfile">tls_certfile</string>
     <string name="pref_item_tls_certfile">Client Certification Filename</string>
     <string name="pref_key_tls_keyfilePassword">tls_keyfilePassword</string>
     <string name="pref_item_tls_keyfilePassword">Client Certification Password</string>
+
     <string name="pref_key_tls_check_hostname">tls_check_hostname</string>
     <string name="pref_item_tls_check_hostname">Enable Hostname Verification</string>
 
@@ -84,6 +92,7 @@
     <string name="pref_title_crypto_parameters">Cryptographic Parameters</string>
     <string name="pref_key_crypto_algorithm">crypto_algorithm</string>
     <string name="pref_item_crypto_algorithm">Algorithm</string>
+    <string name="pref_default_crypto_algorithm">AES</string>
     <string name="pref_key_crypto_key_length">crypto_key_length</string>
     <string name="pref_item_crypto_key_length">Key Length</string>
     <string name="pref_key_crypto_mode">crypto_mode</string>
@@ -96,34 +105,57 @@
     <string name="pref_item_crypto_kdf_password">Password</string>
     <string name="pref_key_crypto_kdf_algorithm">crypto_kdf_algorithm</string>
     <string name="pref_item_crypto_kdf_algorithm">Algorithm</string>
+    <string name="pref_default_crypto_kbf_algorithm">pbkdf2</string>
     <string name="pref_key_crypto_kdf_salt_bytes">crypto_kdf_salt_bytes</string>
     <string name="pref_item_crypto_kdf_salt_bytes">Salt Bytes</string>
     <string name="pref_key_crypto_kdf_iteration">crypto_kdf_iteration</string>
     <string name="pref_item_crypto_kdf_iteration">Iteration</string>
 
+    <string name="pref_title_crypto_debug">Developers Option</string>
+    <string name="pref_key_toggle_crypto_debug">crypto_debug_crypto_debug</string>
+    <string name="pref_item_toggle_crypto_debug">Enable CRYPTO Debug</string>
+
     <!-- MqttSettingsFragment -->
     <string name="pref_title_mqtt">MQTT</string>
     <string name="pref_summary_mqtt">MQTT parameters</string>
-    <string name="pref_key_mqtt_clean_session">mqtt_clean_session</string>
-    <string name="pref_item_mqtt_clean_session">Clean Session</string>
-    <string name="pref_key_mqtt_protocol">mqtt_version</string>
-    <string name="pref_item_mqtt_protocol">Version</string>
-    <string name="pref_default_mqtt_protocol">DEFAULT</string>
     <string name="pref_key_mqtt_transport">mqtt_transport</string>
     <string name="pref_item_mqtt_transport">Transport Protocol</string>
+    <string name="pref_default_mqtt_transport">tcp</string>
+    <string name="pref_key_toggle_mqtt_debug">mqtt_debug_mqtt_debug</string>
+    <string name="pref_item_toggle_mqtt_debug">Enable MQTT Debug</string>
+
+    <!-- MqttProtocolSettingsFragment -->
+    <string name="pref_title_mqtt_protocol">MQTT Protocol</string>
+    <string name="pref_summary_mqtt_protocol">MQTT protocol parameters</string>
+    <string name="pref_key_mqtt_mqtt_version">mqtt_mqtt_version</string>
+    <string name="pref_item_mqtt_mqtt_version">Version</string>
+    <string name="pref_default_mqtt_version">DEFAULT</string>
     <string name="pref_key_mqtt_qos">mqtt_qos</string>
     <string name="pref_item_mqtt_qos">QoS to Deliver Message</string>
     <string name="pref_default_mqtt_qos">0</string>
     <string name="pref_key_mqtt_retain">mqtt_retain</string>
     <string name="pref_item_mqtt_retain">Retain Published Message</string>
+    <string name="pref_key_mqtt_clean_session">mqtt_clean_session</string>
+    <string name="pref_item_mqtt_clean_session">Clean Session</string>
 
-    <string name="pref_key_mqtt_max_inflight_messages_set_inflight">mqtt_max_inflight_messages</string>
-    <string name="pref_item_mqtt_max_inflight_messages_set_inflight">Max Inflight Messages</string>
-
+    <!-- MqttConnectSettingsFragment -->
+    <string name="pref_title_mqtt_connect">MQTT Connect</string>
+    <string name="pref_summary_mqtt_connect">MQTT connection parameters</string>
     <string name="pref_key_mqtt_connect_keepalive">mqtt_connect_keepalive</string>
     <string name="pref_item_mqtt_connect_keepalive">Keep Alive Interval (seconds)</string>
     <string name="pref_key_mqtt_connect_automatic_reconnect">mqtt_connect_automatic_reconnect</string>
     <string name="pref_item_mqtt_connect_automatic_reconnect">Enable Automatic Reconnect</string>
     <string name="pref_key_mqtt_connect_connection_timeout">mqtt_connect_connection_timeout</string>
     <string name="pref_item_mqtt_connect_connection_timeout">Connection Timeout (seconds)</string>
+    <string name="pref_key_mqtt_reconnect_max_delay">mqtt_reconnect_max_delay</string>
+    <string name="pref_item_mqtt_reconnect_max_delay">Max Reconnect Delay (milliseconds)</string>
+
+    <!-- MqttInFlightSettingsFragment -->
+    <string name="pref_title_mqtt_inflight">MQTT InFlight</string>
+    <string name="pref_summary_mqtt_inflight">MQTT InFlight parameters</string>
+    <string name="pref_key_toggle_mqtt_inflight">mqtt_inflight_max_inflight_messages_set</string>
+    <string name="pref_item_toggle_mqtt_inflight">Enable Max InFlight Messages</string>
+    <string name="pref_key_mqtt_inflight_inflight">mqtt_inflight_inflight</string>
+    <string name="pref_item_mqtt_inflight_inflight">Inflight</string>
+
 </resources>

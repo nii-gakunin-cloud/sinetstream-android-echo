@@ -24,24 +24,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
-        app:title="@string/pref_title_mqtt">
-
-        <Preference
-            app:allowDividerAbove="false"
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.MqttProtocolSettingsFragment"
-            app:summary="@string/pref_summary_mqtt_protocol"
-            app:title="@string/pref_title_mqtt_protocol" />
-
-        <Preference
-            app:allowDividerAbove="true"
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.MqttConnectSettingsFragment"
-            app:summary="@string/pref_summary_mqtt_connect"
-            app:title="@string/pref_title_mqtt_connect" />
+        app:title="@string/pref_title_mqtt_inflight">
 
         <SwitchPreferenceCompat
-            app:allowDividerAbove="true"
-            app:defaultValue="false"
-            app:key="@string/pref_key_toggle_mqtt_debug"
-            app:title="@string/pref_item_toggle_mqtt_debug" />
+            app:key="@string/pref_key_toggle_mqtt_inflight"
+            app:title="@string/pref_item_toggle_mqtt_inflight"
+            app:defaultValue="false"/>
+
+        <EditTextPreference
+            app:defaultValue="10"
+            app:dependency="@string/pref_key_toggle_mqtt_inflight"
+            app:dialogTitle="@string/pref_item_mqtt_inflight_inflight"
+            app:key="@string/pref_key_mqtt_inflight_inflight"
+            app:title="@string/pref_item_mqtt_inflight_inflight"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 </PreferenceScreen>

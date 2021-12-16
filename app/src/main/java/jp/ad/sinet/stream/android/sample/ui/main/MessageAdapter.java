@@ -30,16 +30,26 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.nodes.Tag;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import jp.ad.sinet.stream.android.sample.R;
+import jp.ad.sinet.stream.android.utils.DateTimeUtil;
 
-public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHolder> {
+public class MessageAdapter extends
+        RecyclerView.Adapter<MessageAdapter.ViewHolder> {
     private final List<String> mArrayList;
+    private final DateTimeUtil mDateTimeUtil;
 
     public MessageAdapter() {
         this.mArrayList = new ArrayList<>();
+        this.mDateTimeUtil = new DateTimeUtil();
     }
 
     /**
@@ -82,7 +92,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
      */
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(
+            @NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(viewType, parent, false);
         return new ViewHolder(view);
@@ -122,6 +133,19 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     @Override
     public int getItemCount() {
         return mArrayList.size();
+    }
+
+    void addMessage(
+            @NonNull String topic,
+            long timestamp,
+            @NonNull Object data) {
+        Map<String, Object> map = new TreeMap<>();
+        map.put("Topic", topic);
+        map.put("TimeStamp", mDateTimeUtil.toIso8601String(timestamp));
+        map.put("Value", data);
+
+        Yaml yaml = new Yaml();
+        addMessage(yaml.dumpAs(map, Tag.MAP, DumperOptions.FlowStyle.BLOCK));
     }
 
     void addMessage(@NonNull String data) {

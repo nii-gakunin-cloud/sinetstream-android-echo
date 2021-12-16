@@ -21,6 +21,7 @@
 
 package jp.ad.sinet.stream.android.sample;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -32,21 +33,24 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.preference.PreferenceManager;
 
+import jp.ad.sinet.stream.android.sample.constants.ActivityCodes;
 import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
 import jp.ad.sinet.stream.android.sample.util.DialogUtil;
 
 public class LauncherActivity extends AppCompatActivity {
     private final String TAG = LauncherActivity.class.getSimpleName();
 
-    private final int ACTIVITY_CODE_MAIN = 1;
-    private final int ACTIVITY_CODE_SETTINGS = 2;
-
+    private ActivityResultLauncher<Intent> mActivityResultLauncher;
     private SharedPreferences mSharedPreferences;
 
     @Override
@@ -64,7 +68,7 @@ public class LauncherActivity extends AppCompatActivity {
                     if (serviceName != null) {
                         intent.putExtra(BundleKeys.BUNDLE_KEY_SERVICE_NAME, serviceName);
                     }
-                    startActivityForResult(intent, ACTIVITY_CODE_MAIN);
+                    mActivityResultLauncher.launch(intent);
                 }
             });
         }
@@ -75,7 +79,7 @@ public class LauncherActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     Intent intent = new Intent(v.getContext(), SettingsActivity.class);
-                    startActivityForResult(intent, ACTIVITY_CODE_SETTINGS);
+                    mActivityResultLauncher.launch(intent);
                 }
             });
         }
@@ -88,6 +92,20 @@ public class LauncherActivity extends AppCompatActivity {
         if (toolbar != null) {
             setSupportActionBar(toolbar);
         }
+
+        /*
+         * https://developer.android.com/training/basics/intents/result#register
+         */
+        mActivityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new ActivityResultCallback<>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        Log.d(TAG, "ActivityResultLauncher.onActivityResult: result=" + result);
+                        processActivityResult(result);
+                    }
+                }
+        );
     }
 
     @Override
@@ -177,25 +195,30 @@ public class LauncherActivity extends AppCompatActivity {
         DialogUtil.showSimpleDialog(this, descriptions, true);
     }
 
-    /**
-     * Dispatch incoming result to the correct fragment.
-     *
-     * @param requestCode    User specified code at startActivityForResult
-     * @param resultCode    Return value set by the called Activity.
-     * @param data    Called Activity might set extra info
-     */
-    @Override
-    protected void onActivityResult(
-            int requestCode, int resultCode, @Nullable Intent data) {
-        Log.d(TAG, "onActivityResult: " +
-                "requestCode(" + requestCode + "),resultCode(" + resultCode + ")");
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode) {
-            case ACTIVITY_CODE_SETTINGS:
-                toggleRunButton();
+    private void processActivityResult(@NonNull ActivityResult result) {
+        Log.d(TAG, "processActivityResult: " + result);
+        final int resultCode = result.getResultCode();
+        switch (resultCode) {
+            case Activity.RESULT_OK:
+                Intent intent = result.getData();
+                if (intent != null) {
+                    int code = intent.getIntExtra(
+                            ActivityCodes.KEY, ActivityCodes.ACTIVITY_CODE_UNSPECIFIED);
+                    switch (code) {
+                        case ActivityCodes.ACTIVITY_CODE_MAIN:
+                            Log.d(TAG, "MainActivity has finished");
+                            break;
+                        case ActivityCodes.ACTIVITY_CODE_SETTINGS:
+                            Log.d(TAG, "SettingsActivity has finished");
+                            break;
+                        default:
+                            break;
+                    }
+                }
                 break;
-            case ACTIVITY_CODE_MAIN:
+            case Activity.RESULT_CANCELED:
+                Log.d(TAG, "Back from SettingsActivity");
+                break;
             default:
                 break;
         }
