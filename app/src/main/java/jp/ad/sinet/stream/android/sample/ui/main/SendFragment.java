@@ -61,6 +61,11 @@ public class SendFragment extends Fragment {
     private SendFragmentListener mListener;
     // private MainViewModel mViewModel;
 
+    private String mServerUrl = null;
+    private String mAccount = null;
+    private String mSecretKey = null;
+    private boolean mUseRemoteConfig = false;
+
     public static SendFragment newInstance() {
         return new SendFragment();
     }
@@ -79,7 +84,7 @@ public class SendFragment extends Fragment {
         if (context instanceof SendFragmentListener) {
             mListener = (SendFragmentListener) context;
         } else {
-            throw new RuntimeException(context.toString() +
+            throw new RuntimeException(context +
                     " must implement SendFragmentListener");
         }
     }
@@ -280,15 +285,34 @@ public class SendFragment extends Fragment {
         super.onStop();
     }
 
-    public void startWriter(@Nullable String alias) {
+    public void setRemoteConfig(
+            @NonNull String serverUrl,
+            @NonNull String account,
+            @NonNull String secretKey) {
+        this.mServerUrl = serverUrl;
+        this.mAccount = account;
+        this.mSecretKey = secretKey;
+        this.mUseRemoteConfig = true;
+    }
+
+    public void initializeWriter(@Nullable String alias) {
         if (mSinetStreamWriter != null) {
+            if (mUseRemoteConfig) {
+                mSinetStreamWriter.setRemoteConfig(mServerUrl, mAccount, mSecretKey);
+            }
             mSinetStreamWriter.initialize(mServiceName, alias);
         }
     }
 
-    public void stopWriter() {
+    public void terminateWriter() {
         if (mSinetStreamWriter != null) {
             mSinetStreamWriter.terminate();
+        }
+    }
+
+    public void setupWriter() {
+        if (mSinetStreamWriter != null) {
+            mSinetStreamWriter.setup();
         }
     }
 

@@ -27,4 +27,5 @@ public class BundleKeys {
     public final static String BUNDLE_KEY_CONFIRM_MESSAGE = "bundle_key_confirm_message";
     public final static String BUNDLE_KEY_PARCELABLE = "bundle_key_parcelable";
     public final static String BUNDLE_KEY_ERROR_FATAL = "bundle_key_error_fatal";
+    public final static String BUNDLE_KEY_USE_CONFIG_SERVER = "bundle_key_use_config_server";
 }

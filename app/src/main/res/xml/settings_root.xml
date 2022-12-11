@@ -22,33 +22,7 @@
 
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
     <Preference
-        app:title="@string/pref_title_service"
-        app:summary="@string/pref_summary_service"
-        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.ServiceSettingsFragment"/>
-
-    <Preference
-        app:title="@string/pref_title_brokers"
-        app:summary="@string/pref_summary_brokers"
-        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.BrokerSettingsFragment"/>
-
-    <Preference
-        app:title="@string/pref_title_mqtt"
-        app:summary="@string/pref_summary_mqtt"
-        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.MqttSettingsFragment"/>
-
-    <Preference
-        app:title="@string/pref_title_userauth"
-        app:summary="@string/pref_summary_userauth"
-        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.UserAuthSettingsFragment"/>
-
-    <Preference
-        app:title="@string/pref_title_tls"
-        app:summary="@string/pref_summary_tls"
-        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.TlsSettingsFragment"/>
-
-    <Preference
-        app:title="@string/pref_title_crypto"
-        app:summary="@string/pref_summary_crypto"
-        app:enabled="false"
-        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.CryptoSettingsFragment"/>
+        app:title="@string/pref_title_sinetstream"
+        app:summary="@string/pref_summary_sinetstream"
+        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.SinetStreamSettingsFragment"/>
 </PreferenceScreen>

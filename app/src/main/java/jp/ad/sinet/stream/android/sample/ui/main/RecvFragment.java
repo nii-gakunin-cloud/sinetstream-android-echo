@@ -55,6 +55,11 @@ public class RecvFragment extends Fragment {
     private LinearLayoutManager mLinearLayoutManager;
     // private MainViewModel mViewModel;
 
+    private String mServerUrl = null;
+    private String mAccount = null;
+    private String mSecretKey = null;
+    private boolean mUseRemoteConfig = false;
+
     public static RecvFragment newInstance() {
         return new RecvFragment();
     }
@@ -73,7 +78,7 @@ public class RecvFragment extends Fragment {
         if (context instanceof RecvFragmentListener) {
             mListener = (RecvFragmentListener) context;
         } else {
-            throw new RuntimeException(context.toString() +
+            throw new RuntimeException(context +
                     " must implement RecvFragmentListener");
         }
     }
@@ -233,15 +238,34 @@ public class RecvFragment extends Fragment {
         super.onStop();
     }
 
-    public void startReader(@Nullable String alias) {
+    public void setRemoteConfig(
+            @NonNull String serverUrl,
+            @NonNull String account,
+            @NonNull String secretKey) {
+        this.mServerUrl = serverUrl;
+        this.mAccount = account;
+        this.mSecretKey = secretKey;
+        this.mUseRemoteConfig = true;
+    }
+
+    public void initializeReader(@Nullable String alias) {
         if (mSinetStreamReader != null) {
+            if (mUseRemoteConfig) {
+                mSinetStreamReader.setRemoteConfig(mServerUrl, mAccount, mSecretKey);
+            }
             mSinetStreamReader.initialize(mServiceName, alias);
         }
     }
 
-    public void stopReader() {
+    public void terminateReader() {
         if (mSinetStreamReader != null) {
             mSinetStreamReader.terminate();
+        }
+    }
+
+    public void setupReader() {
+        if (mSinetStreamReader != null) {
+            mSinetStreamReader.setup();
         }
     }
 

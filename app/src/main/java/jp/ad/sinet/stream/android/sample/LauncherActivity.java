@@ -68,6 +68,9 @@ public class LauncherActivity extends AppCompatActivity {
                     if (serviceName != null) {
                         intent.putExtra(BundleKeys.BUNDLE_KEY_SERVICE_NAME, serviceName);
                     }
+                    if (useConfigServer()) {
+                        intent.putExtra(BundleKeys.BUNDLE_KEY_USE_CONFIG_SERVER, true);
+                    }
                     mActivityResultLauncher.launch(intent);
                 }
             });
@@ -111,7 +114,12 @@ public class LauncherActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        toggleRunButton();
+
+        if (useConfigServer()) {
+            enableRunButton();
+        } else {
+            toggleRunButton();
+        }
     }
 
     /**
@@ -224,7 +232,23 @@ public class LauncherActivity extends AppCompatActivity {
         }
     }
 
+    private void enableRunButton() {
+        TextView tv = findViewById(R.id.button_label_run);
+        if (tv != null) {
+            tv.setText(R.string.button_run_with_config_server);
+        }
+        ImageButton imageButtonRun = findViewById(R.id.button_run);
+        if (imageButtonRun != null) {
+            imageButtonRun.setEnabled(true);
+            showMessage("");
+        }
+    }
+
     private void toggleRunButton() {
+        TextView tv = findViewById(R.id.button_label_run);
+        if (tv != null) {
+            tv.setText(R.string.button_run);
+        }
         ImageButton imageButtonRun = findViewById(R.id.button_run);
         if (imageButtonRun != null) {
             imageButtonRun.setEnabled(false);
@@ -266,6 +290,16 @@ public class LauncherActivity extends AppCompatActivity {
         if (tv != null && message != null) {
             tv.setText(message);
         }
+    }
+
+    private boolean useConfigServer() {
+        /* Not manual configuration = use configuration server */
+        return (! getPrefsToggleSinetstreamManualConfig());
+    }
+
+    private boolean getPrefsToggleSinetstreamManualConfig() {
+        String key = getString(R.string.pref_key_toggle_sinetstream_manual_config);
+        return mSharedPreferences.getBoolean(key, true);
     }
 
     @Nullable

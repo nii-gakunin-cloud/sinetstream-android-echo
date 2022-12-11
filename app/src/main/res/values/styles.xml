@@ -9,6 +9,13 @@
 
         <!-- Override ToolBar icon color -->
         <item name="colorControlNormal">#FFFFFF</item>
+
+        <!--
+            Hmm, colorSurface item is required for a Material Theme.
+            https://material.io/blog/android-material-theme-color
+        -->
+        <item name="colorSurface">@color/design_default_color_surface</item>
+
     </style>
 
 </resources>

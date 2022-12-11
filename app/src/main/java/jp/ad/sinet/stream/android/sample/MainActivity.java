@@ -44,8 +44,10 @@ import androidx.preference.PreferenceManager;
 
 import jp.ad.sinet.stream.android.api.SinetStreamReaderString;
 import jp.ad.sinet.stream.android.api.SinetStreamWriterString;
+import jp.ad.sinet.stream.android.config.remote.ConfigServerSettings;
 import jp.ad.sinet.stream.android.net.cert.KeyChainHandler;
 import jp.ad.sinet.stream.android.sample.constants.ActivityCodes;
+import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
 import jp.ad.sinet.stream.android.sample.ui.main.EchoViewModel;
 import jp.ad.sinet.stream.android.sample.ui.main.ErrorDialogFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.RecvFragment;
@@ -69,6 +71,12 @@ public class MainActivity extends AppCompatActivity implements
     private boolean mIsReaderAvailable = false;
 
     private SharedPreferences mSharedPreferences;
+
+    /* Parameters to be required for the remote configuration server access */
+    private boolean mUseConfigServer = false;
+    private String mServerUrl = null;
+    private String mAccount = null;
+    private String mSecretKey = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,6 +111,12 @@ public class MainActivity extends AppCompatActivity implements
             Intent intent = getIntent();
             if (intent != null) {
                 bundle = intent.getExtras();
+
+                mUseConfigServer = bundle.getBoolean(
+                        BundleKeys.BUNDLE_KEY_USE_CONFIG_SERVER, false);
+                if (mUseConfigServer) {
+                    setupRemoteConfiguration();
+                }
             }
 
             FragmentTransaction transaction =
@@ -117,6 +131,33 @@ public class MainActivity extends AppCompatActivity implements
 
             transaction.commit();
         }
+    }
+
+    private void setupRemoteConfiguration() {
+        ConfigServerSettings mConfigServerSettings = new ConfigServerSettings(this,
+                new ConfigServerSettings.ConfigServerSettingsListener() {
+                    @Override
+                    public void onParsed(@NonNull String serverUrl,
+                                         @NonNull String account,
+                                         @NonNull String secretKey) {
+                        mServerUrl = serverUrl;
+                        mAccount = account;
+                        mSecretKey = secretKey;
+
+                        buildFragments(null);
+                    }
+
+                    @Override
+                    public void onExpired() {
+                        MainActivity.this.onError("Auth.json has expired, get new one");
+                    }
+
+                    @Override
+                    public void onError(@NonNull String errmsg) {
+                        MainActivity.this.onError(errmsg);
+                    }
+                });
+        mConfigServerSettings.launchDocumentPicker();
     }
 
     private boolean getPrefsToggleSslTls() {
@@ -159,6 +200,9 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "onStart");
         super.onStart();
 
+        if (mUseConfigServer) {
+            return;
+        }
         if (getPrefsToggleSslTls()) {
             /* Use SSL/TLS */
             if (getPrefsClientCertificates()) {
@@ -202,11 +246,19 @@ public class MainActivity extends AppCompatActivity implements
 
         SendFragment sendFragment = lookupSendFragment();
         if (sendFragment != null) {
-            sendFragment.startWriter(alias);
+            if (mUseConfigServer) {
+                sendFragment.setRemoteConfig(
+                        mServerUrl, mAccount, mSecretKey);
+            }
+            sendFragment.initializeWriter(alias);
         }
         RecvFragment recvFragment = lookupRecvFragment();
         if (recvFragment != null) {
-            recvFragment.startReader(alias);
+            if (mUseConfigServer) {
+                recvFragment.setRemoteConfig(
+                        mServerUrl, mAccount, mSecretKey);
+            }
+            recvFragment.initializeReader(alias);
         }
         toggleProgressBar(true);
     }
@@ -219,7 +271,7 @@ public class MainActivity extends AppCompatActivity implements
         if (sendFragment != null) {
             /* Prevent timing-dependent NullPointerException */
             if (mIsWriterAvailable) {
-                sendFragment.stopWriter();
+                sendFragment.terminateWriter();
             }
             mIsWriterAvailable = false; /* Prevent race condition */
         }
@@ -227,7 +279,7 @@ public class MainActivity extends AppCompatActivity implements
         if (recvFragment != null) {
             /* Prevent timing-dependent NullPointerException */
             if (mIsReaderAvailable) {
-                recvFragment.stopReader();
+                recvFragment.terminateReader();
             }
             mIsReaderAvailable = false; /* Prevent race condition */
         }
@@ -244,6 +296,19 @@ public class MainActivity extends AppCompatActivity implements
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Called when initialization process, including configuration loading,
+     * has finished.
+     * Now user can call "SinetStreamReader<T>.setup()" next.
+     */
+    @Override
+    public void onReaderConfigLoaded() {
+        RecvFragment recvFragment = lookupRecvFragment();
+        if (recvFragment != null) {
+            recvFragment.setupReader();
+        }
+    }
+
     @Override
     public void onReaderStatusChanged(boolean available) {
         /* Implementation of SinetStreamReaderListener.onStatusChanged */
@@ -258,6 +323,18 @@ public class MainActivity extends AppCompatActivity implements
 
             /* See corresponding comment onWriterStatusChanged(). */
         }
+    }
+
+    /**
+     * Called when the broker connection has lost and auto-reconnect
+     * procedure is in progress.
+     */
+    @Override
+    public void onReaderReconnectInProgress() {
+        /* Implementation of SinetStreamReaderListener.onReaderReconnectInProgress */
+        Log.d(TAG, "onReaderReconnectInProgress");
+        mIsReaderAvailable = false;
+        toggleProgressBar(true);
     }
 
 //    /**
@@ -293,6 +370,19 @@ public class MainActivity extends AppCompatActivity implements
         RecvFragment recvFragment = lookupRecvFragment();
         if (recvFragment != null) {
             recvFragment.onDataReceived(topic, timestamp, data);
+        }
+    }
+
+    /**
+     * Called when initialization process, including configuration loading,
+     * has finished.
+     * Now user can call "SinetStreamWriter<T>.setup()" next.
+     */
+    @Override
+    public void onWriterConfigLoaded() {
+        SendFragment sendFragment = lookupSendFragment();
+        if (sendFragment != null) {
+            sendFragment.setupWriter();
         }
     }
 
@@ -336,6 +426,18 @@ public class MainActivity extends AppCompatActivity implements
                 sendFragment.toggleSendButton(available);
             }
         }
+    }
+
+    /**
+     * Called when the broker connection has lost and auto-reconnect
+     * procedure is in progress.
+     */
+    @Override
+    public void onWriterReconnectInProgress() {
+        /* Implementation of SinetStreamWriterListener.onWriterReconnectInProgress */
+        Log.d(TAG, "onWriterReconnectInProgress");
+        mIsWriterAvailable = false;
+        toggleProgressBar(true);
     }
 
 //    /**
