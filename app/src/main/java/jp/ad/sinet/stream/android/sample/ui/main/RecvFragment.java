@@ -59,6 +59,10 @@ public class RecvFragment extends Fragment {
     private String mAccount = null;
     private String mSecretKey = null;
     private boolean mUseRemoteConfig = false;
+    private boolean mProtocolDebug = false;
+
+    private String mPredefinedDataStream = null;
+    private String mPredefinedServiceName = null;
 
     public static RecvFragment newInstance() {
         return new RecvFragment();
@@ -125,6 +129,9 @@ public class RecvFragment extends Fragment {
             if (serviceName != null) {
                 mServiceName = serviceName;
             }
+
+            mProtocolDebug =
+                    bundle.getBoolean(BundleKeys.BUNDLE_KEY_PROTOCOL_DEBUG, false);
         }
     }
 
@@ -196,7 +203,7 @@ public class RecvFragment extends Fragment {
             // mSinetStreamReader = new SinetStreamReaderBytes(activity);
         } else {
             // This case must not happen.
-            mListener.onError(TAG + "Cannot get Activity?");
+            mListener.onError(TAG + ": Cannot get Activity?");
         }
     }
 
@@ -248,10 +255,26 @@ public class RecvFragment extends Fragment {
         this.mUseRemoteConfig = true;
     }
 
+    public void setPredefinedParameters(
+            @Nullable String dataStream,
+            @Nullable String serviceName) {
+        mPredefinedDataStream = dataStream;
+        mPredefinedServiceName = serviceName;
+    }
+
     public void initializeReader(@Nullable String alias) {
         if (mSinetStreamReader != null) {
             if (mUseRemoteConfig) {
-                mSinetStreamReader.setRemoteConfig(mServerUrl, mAccount, mSecretKey);
+                mSinetStreamReader.setRemoteConfig(
+                        mServerUrl, mAccount, mSecretKey);
+
+                if (mPredefinedDataStream != null && mPredefinedServiceName != null) {
+                    mSinetStreamReader.setPredefinedParameters(
+                            mPredefinedDataStream, mPredefinedServiceName);
+                }
+            }
+            if (mProtocolDebug) {
+                mSinetStreamReader.enableDebug(true);
             }
             mSinetStreamReader.initialize(mServiceName, alias);
         }
@@ -335,6 +358,6 @@ public class RecvFragment extends Fragment {
      * http://developer.android.com/training/basics/fragments/communicating.html
      */
     public interface RecvFragmentListener {
-        void onError(@NonNull String errorMessage);
+        void onError(@NonNull String description);
     }
 }

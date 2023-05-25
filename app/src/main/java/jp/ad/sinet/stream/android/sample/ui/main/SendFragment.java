@@ -65,6 +65,10 @@ public class SendFragment extends Fragment {
     private String mAccount = null;
     private String mSecretKey = null;
     private boolean mUseRemoteConfig = false;
+    private boolean mProtocolDebug = false;
+
+    private String mPredefinedDataStream = null;
+    private String mPredefinedServiceName = null;
 
     public static SendFragment newInstance() {
         return new SendFragment();
@@ -131,6 +135,9 @@ public class SendFragment extends Fragment {
             if (serviceName != null) {
                 mServiceName = serviceName;
             }
+
+            mProtocolDebug =
+                    bundle.getBoolean(BundleKeys.BUNDLE_KEY_PROTOCOL_DEBUG, false);
         }
     }
 
@@ -243,7 +250,7 @@ public class SendFragment extends Fragment {
             //mSinetStreamWriter = new SinetStreamWriterBytes(activity);
         } else {
             // This case must not happen.
-            mListener.onError(TAG + "Cannot get Activity?");
+            mListener.onError(TAG + ": Cannot get Activity?");
         }
     }
 
@@ -295,10 +302,26 @@ public class SendFragment extends Fragment {
         this.mUseRemoteConfig = true;
     }
 
+    public void setPredefinedParameters(
+            @Nullable String dataStream,
+            @Nullable String serviceName) {
+        mPredefinedDataStream = dataStream;
+        mPredefinedServiceName = serviceName;
+    }
+
     public void initializeWriter(@Nullable String alias) {
         if (mSinetStreamWriter != null) {
             if (mUseRemoteConfig) {
-                mSinetStreamWriter.setRemoteConfig(mServerUrl, mAccount, mSecretKey);
+                mSinetStreamWriter.setRemoteConfig(
+                        mServerUrl, mAccount, mSecretKey);
+
+                if (mPredefinedDataStream != null && mPredefinedServiceName != null) {
+                    mSinetStreamWriter.setPredefinedParameters(
+                            mPredefinedDataStream, mPredefinedServiceName);
+                }
+            }
+            if (mProtocolDebug) {
+                mSinetStreamWriter.enableDebug(true);
             }
             mSinetStreamWriter.initialize(mServiceName, alias);
         }
@@ -354,6 +377,6 @@ public class SendFragment extends Fragment {
      * http://developer.android.com/training/basics/fragments/communicating.html
      */
     public interface SendFragmentListener {
-        void onError(@NonNull String errorMessage);
+        void onError(@NonNull String description);
     }
 }

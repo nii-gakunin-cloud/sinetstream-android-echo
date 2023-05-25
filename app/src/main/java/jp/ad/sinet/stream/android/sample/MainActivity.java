@@ -27,7 +27,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -42,14 +41,18 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.PreferenceManager;
 
+import java.util.Date;
+
 import jp.ad.sinet.stream.android.api.SinetStreamReaderString;
 import jp.ad.sinet.stream.android.api.SinetStreamWriterString;
 import jp.ad.sinet.stream.android.config.remote.ConfigServerSettings;
 import jp.ad.sinet.stream.android.net.cert.KeyChainHandler;
 import jp.ad.sinet.stream.android.sample.constants.ActivityCodes;
 import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
+import jp.ad.sinet.stream.android.sample.ui.configserver.SharedPrefsAccessKey;
+import jp.ad.sinet.stream.android.sample.ui.configserver.SharedPrefsConfigServer;
+import jp.ad.sinet.stream.android.sample.ui.dialogs.ErrorDialogFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.EchoViewModel;
-import jp.ad.sinet.stream.android.sample.ui.main.ErrorDialogFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.RecvFragment;
 import jp.ad.sinet.stream.android.sample.ui.main.SendFragment;
 import jp.ad.sinet.stream.android.sample.util.DialogUtil;
@@ -74,6 +77,8 @@ public class MainActivity extends AppCompatActivity implements
 
     /* Parameters to be required for the remote configuration server access */
     private boolean mUseConfigServer = false;
+    private boolean mIsProtocolDebug = false;
+    private ConfigServerSettings mConfigServerSettings = null;
     private String mServerUrl = null;
     private String mAccount = null;
     private String mSecretKey = null;
@@ -114,50 +119,114 @@ public class MainActivity extends AppCompatActivity implements
 
                 mUseConfigServer = bundle.getBoolean(
                         BundleKeys.BUNDLE_KEY_USE_CONFIG_SERVER, false);
+                mIsProtocolDebug = bundle.getBoolean(
+                        BundleKeys.BUNDLE_KEY_PROTOCOL_DEBUG, false);
+
                 if (mUseConfigServer) {
+                    /*
+                     * Let user pickup an AccessToken which must have downloaded
+                     * on this device.
+                     * Note that series of dialogs may appear during the remote
+                     * configuration processes, if there are multiple choices in
+                     * the SINETStream configuration set.
+                     */
                     setupRemoteConfiguration();
+                } else {
+                    Log.d(TAG, "Use manually chosen SINETStream configurations");
                 }
             }
+
+            Bundle bundle2 = ((bundle != null) ? bundle : new Bundle());
+            bundle2.putBoolean(BundleKeys.BUNDLE_KEY_PROTOCOL_DEBUG, mIsProtocolDebug);
 
             FragmentTransaction transaction =
                     getSupportFragmentManager().beginTransaction();
             SendFragment sendFragment = new SendFragment();
-            sendFragment.setArguments(bundle);
+            sendFragment.setArguments(bundle2);
             transaction.replace(R.id.senderContainer, sendFragment, SEND_FRAGMENT);
 
             RecvFragment recvFragment = new RecvFragment();
-            recvFragment.setArguments(bundle);
+            recvFragment.setArguments(bundle2);
             transaction.replace(R.id.receiverContainer, recvFragment, RECV_FRAGMENT);
 
             transaction.commit();
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
+        clearRemoteConfiguration();
+        super.onDestroy();
+    }
+
     private void setupRemoteConfiguration() {
-        ConfigServerSettings mConfigServerSettings = new ConfigServerSettings(this,
+        /* If preloaded AccessToken exists, use it. */
+        SharedPrefsAccessKey sharedPrefsAccessKey =
+                new SharedPrefsAccessKey(this);
+
+        if (sharedPrefsAccessKey.isAccessTokenEmpty()) {
+            Log.d(TAG, "Preloaded AccessToken does not exist");
+        } else {
+            Log.d(TAG, "Going to use preloaded AccessToken");
+            if (sharedPrefsAccessKey.isAccessTokenExpired()) {
+                onError(getString(R.string.auth_json_expired));
+                return;
+            }
+            mServerUrl = sharedPrefsAccessKey.readAccessTokenServerUrl();
+            mAccount = sharedPrefsAccessKey.readAccessTokenAccount();
+            mSecretKey = sharedPrefsAccessKey.readAccessTokenSecretKey();
+            return;
+        }
+
+        /* Load an AccessToken interactively */
+        mConfigServerSettings = new ConfigServerSettings(this,
                 new ConfigServerSettings.ConfigServerSettingsListener() {
+                    /**
+                     * Called when user-specified settings file (auth.json) contains valid
+                     * parameter values.
+                     *
+                     * @param serverUrl      The URL of the configuration server.
+                     * @param account        The login account for the configuration server.
+                     * @param secretKey      The API key published by the configuration server.
+                     * @param expirationDate Expiration date of the secretKey.
+                     */
                     @Override
                     public void onParsed(@NonNull String serverUrl,
                                          @NonNull String account,
-                                         @NonNull String secretKey) {
+                                         @NonNull String secretKey,
+                                         @NonNull Date expirationDate) {
                         mServerUrl = serverUrl;
                         mAccount = account;
                         mSecretKey = secretKey;
+                        /*
+                         * Don't care expirationDate here.
+                         * Let onExpired() handle the event instead.
+                         */
 
                         buildFragments(null);
                     }
 
                     @Override
                     public void onExpired() {
-                        MainActivity.this.onError("Auth.json has expired, get new one");
+                        MainActivity.this.onError(
+                                getString(R.string.auth_json_expired));
                     }
 
                     @Override
-                    public void onError(@NonNull String errmsg) {
-                        MainActivity.this.onError(errmsg);
+                    public void onError(@NonNull String description) {
+                        MainActivity.this.onError(description);
                     }
                 });
         mConfigServerSettings.launchDocumentPicker();
+    }
+
+    private void clearRemoteConfiguration() {
+        Log.d(TAG, "clearRemoteConfiguration");
+        if (mConfigServerSettings != null) {
+            mConfigServerSettings.clearDocumentPicker();
+            mConfigServerSettings = null;
+        }
     }
 
     private boolean getPrefsToggleSslTls() {
@@ -201,6 +270,11 @@ public class MainActivity extends AppCompatActivity implements
         super.onStart();
 
         if (mUseConfigServer) {
+            if (mConfigServerSettings != null) {
+                Log.d(TAG, "Wait for the ConfigServerSettings callback");
+            } else {
+                buildFragments(null);
+            }
             return;
         }
         if (getPrefsToggleSslTls()) {
@@ -226,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements
                                     if (alias != null) {
                                         buildFragments(alias);
                                     } else {
-                                        onError("Client certificate has not chosen");
+                                        onError(getString(R.string.keychain_alias_unspecified));
                                     }
                                 }
                             });
@@ -245,19 +319,50 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "buildFragments: alias(" + alias + ")");
 
         SendFragment sendFragment = lookupSendFragment();
-        if (sendFragment != null) {
-            if (mUseConfigServer) {
-                sendFragment.setRemoteConfig(
-                        mServerUrl, mAccount, mSecretKey);
+        RecvFragment recvFragment = lookupRecvFragment();
+
+        if (mUseConfigServer) {
+            /*
+             * Automatic list item selection:
+             * During the configuration server sessions, there may be a case
+             * in which multiple choices are being presented depending on
+             * the configuration content.
+             * Usually, user will have to choose the desired item on the fly,
+             * but also user can skip such interventions by specifying the
+             * selection items beforehand.
+             */
+            SharedPrefsConfigServer sharedPrefsConfigServer =
+                    new SharedPrefsConfigServer(this);
+            String dataStream = sharedPrefsConfigServer.getDataStream();
+            String serviceName = sharedPrefsConfigServer.getServiceName();
+
+            if (sendFragment != null) {
+                if (mServerUrl != null && mAccount != null && mSecretKey != null) {
+                    /* Download SINETStream settings from configuration server */
+                    sendFragment.setRemoteConfig(
+                            mServerUrl, mAccount, mSecretKey);
+                }
+                if (dataStream != null && serviceName != null) {
+                    /* Specify multiple-choice items for automatic selection */
+                    sendFragment.setPredefinedParameters(dataStream, serviceName);
+                }
             }
+            if (recvFragment != null) {
+                if (mServerUrl != null && mAccount != null && mSecretKey != null) {
+                    /* Download SINETStream settings from configuration server */
+                    recvFragment.setRemoteConfig(
+                            mServerUrl, mAccount, mSecretKey);
+                }
+                if (dataStream != null && serviceName != null) {
+                    /* Specify multiple-choice items for automatic selection */
+                    recvFragment.setPredefinedParameters(dataStream, serviceName);
+                }
+            }
+        }
+        if (sendFragment != null) {
             sendFragment.initializeWriter(alias);
         }
-        RecvFragment recvFragment = lookupRecvFragment();
         if (recvFragment != null) {
-            if (mUseConfigServer) {
-                recvFragment.setRemoteConfig(
-                        mServerUrl, mAccount, mSecretKey);
-            }
             recvFragment.initializeReader(alias);
         }
         toggleProgressBar(true);
@@ -470,16 +575,16 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onError(@NonNull String message) {
+    public void onError(@NonNull String description) {
         /* Implementation of SinetStreamWriterListener.onError */
         /* Implementation of SinetStreamReaderListener.onError */
         /* Implementation of SendFragmentListener.onError */
         /* Implementation of RecvFragmentListener.onError */
-        Log.e(TAG, "onError: " + message);
+        Log.e(TAG, "onError: " + description);
 
         toggleProgressBar(false);
         DialogUtil.showErrorDialog(
-                this, message, null, true);
+                this, description, null, true);
 
         /*
          * If user pressed OK button on the error dialog window,
@@ -488,8 +593,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onErrorDialogDismissed(
-            @Nullable Parcelable parcelable, boolean isFatal) {
+    public void onErrorDialogDismissed(boolean isFatal) {
         /* Implementation of ErrorDialogFragment.onErrorDialogDismissed */
 
         toggleProgressBar(false);

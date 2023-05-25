@@ -22,7 +22,9 @@
 
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
     <Preference
-        app:title="@string/pref_title_sinetstream"
+        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.SinetStreamSettingsFragment"
+        app:icon="@drawable/web"
         app:summary="@string/pref_summary_sinetstream"
-        app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.SinetStreamSettingsFragment"/>
+        app:title="@string/pref_title_sinetstream" />
+
 </PreferenceScreen>

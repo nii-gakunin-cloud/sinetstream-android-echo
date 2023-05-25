@@ -21,6 +21,13 @@
   -->
 
 <resources>
+    <string-array name="log_level">
+        <item>debug</item>
+        <item>info</item>
+        <item>warning</item>
+        <item>error</item>
+    </string-array>
+
     <!--
     <string-array name="transport_protocols">
         <item>TCP</item>

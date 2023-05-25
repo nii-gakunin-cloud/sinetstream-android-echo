@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright (c) 2022 National Institute of Informatics
+  ~ Copyright (c) 2021 National Institute of Informatics
   ~
   ~  Licensed to the Apache Software Foundation (ASF) under one
   ~  or more contributor license agreements.  See the NOTICE file
@@ -22,42 +22,41 @@
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <SwitchPreferenceCompat
-        app:key="@string/pref_key_toggle_sinetstream_manual_config"
-        app:title="@string/pref_item_toggle_sinetstream_manual_config"
-        app:summaryOn="Set SINETStream parameters manually"
-        app:summaryOff="Download predefined SINETStream parameters"
-        app:defaultValue="true"/>
+    <!--
+        Material Design Icons:
+        https://pictogrammers.com/library/mdi/icon/
+    -->
+    <PreferenceCategory android:title="@string/pref_title_sinetstream">
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="@string/pref_key_toggle_sinetstream_manual_config"
+            app:summaryOff="Download predefined SINETStream parameters"
+            app:summaryOn="Set SINETStream parameters manually"
+            app:title="@string/pref_item_toggle_sinetstream_manual_config" />
+
+        <Preference
+            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.SinetStreamManualSettingsFragment"
+            app:icon="@drawable/tune"
+            app:key="@string/pref_category_sinetstream"
+            app:summary="@string/pref_summary_sinetstream"
+            app:title="@string/pref_title_manual_configuration" />
+
+        <Preference
+            app:fragment="jp.ad.sinet.stream.android.sample.ui.configserver.ConfigServerSettingsFragment"
+            app:icon="@drawable/server_network"
+            app:key="@string/pref_category_config_server"
+            app:summary="@string/pref_summary_config_server"
+            app:title="@string/pref_title_config_server" />
+
+    </PreferenceCategory>
 
     <PreferenceCategory
-        app:dependency="@string/pref_key_toggle_sinetstream_manual_config"
-        android:title="SINETStream">
-
+        android:title="System"
+        app:enabled="true">
         <Preference
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.ServiceSettingsFragment"
-            app:summary="@string/pref_summary_service"
-            app:title="@string/pref_title_service" />
-        <Preference
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.BrokerSettingsFragment"
-            app:summary="@string/pref_summary_brokers"
-            app:title="@string/pref_title_brokers" />
-        <Preference
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.MqttSettingsFragment"
-            app:summary="@string/pref_summary_mqtt"
-            app:title="@string/pref_title_mqtt" />
-        <Preference
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.UserAuthSettingsFragment"
-            app:summary="@string/pref_summary_userauth"
-            app:title="@string/pref_title_userauth" />
-        <Preference
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.TlsSettingsFragment"
-            app:summary="@string/pref_summary_tls"
-            app:title="@string/pref_title_tls" />
-        <Preference
-            app:enabled="false"
-            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.CryptoSettingsFragment"
-            app:summary="@string/pref_summary_crypto"
-            app:title="@string/pref_title_crypto" />
+            app:fragment="jp.ad.sinet.stream.android.sample.ui.settings.DevOptsSettingsFragment"
+            app:icon="@drawable/code_braces"
+            app:title="@string/pref_title_devopt" />
     </PreferenceCategory>
 
 </PreferenceScreen>

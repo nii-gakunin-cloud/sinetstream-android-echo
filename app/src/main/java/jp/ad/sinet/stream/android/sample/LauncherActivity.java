@@ -24,6 +24,9 @@ package jp.ad.sinet.stream.android.sample;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -70,6 +73,9 @@ public class LauncherActivity extends AppCompatActivity {
                     }
                     if (useConfigServer()) {
                         intent.putExtra(BundleKeys.BUNDLE_KEY_USE_CONFIG_SERVER, true);
+                    }
+                    if (isProtocolDebug()) {
+                        intent.putExtra(BundleKeys.BUNDLE_KEY_PROTOCOL_DEBUG, true);
                     }
                     mActivityResultLauncher.launch(intent);
                 }
@@ -149,7 +155,7 @@ public class LauncherActivity extends AppCompatActivity {
      * @see #onOptionsItemSelected
      */
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_items, menu);
         return super.onCreateOptionsMenu(menu);
@@ -188,9 +194,34 @@ public class LauncherActivity extends AppCompatActivity {
     }
 
     private void handleActionAbout() {
+        /*
+         * Starting from Android Gradle Plugin 4.1.0, Version properties
+         * (VERSION_NAME and BUILD_TYPE) have removed from BuildConfig class
+         * in library projects.
+         * Instead, we extract version properties from PackageInfo.
+         *
+         * https://developer.android.com/studio/releases/past-releases#4-1-0
+         */
+        PackageManager pm = this.getPackageManager();
+        PackageInfo packageInfo;
+        try {
+            packageInfo = pm.getPackageInfo(this.getPackageName(), 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        String versionName = packageInfo.versionName;
+        String versionCode;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            versionCode = String.valueOf(packageInfo.getLongVersionCode());
+        } else {
+            versionCode = String.valueOf(packageInfo.versionCode);
+        }
+
         String descriptions = "";
-        descriptions += "<p>Version: " + BuildConfig.VERSION_NAME +
-                        " (" + BuildConfig.BUILD_TYPE + ")" + "</p>";
+        descriptions += "<p>Version: " + versionName +
+                        " (" + versionCode + ")" + "</p>";
         descriptions += "<br>";
         descriptions += "<p>See " +
                         "<a href=\"https://www.sinetstream.net/\">SINETStream</a> " +
@@ -295,6 +326,11 @@ public class LauncherActivity extends AppCompatActivity {
     private boolean useConfigServer() {
         /* Not manual configuration = use configuration server */
         return (! getPrefsToggleSinetstreamManualConfig());
+    }
+
+    private boolean isProtocolDebug() {
+        String key = getString(R.string.pref_key_toggle_protocol_debug);
+        return mSharedPreferences.getBoolean(key, false);
     }
 
     private boolean getPrefsToggleSinetstreamManualConfig() {

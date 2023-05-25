@@ -22,10 +22,14 @@
 package jp.ad.sinet.stream.android.sample.constants;
 
 public class BundleKeys {
+    public final static String BUNDLE_KEY_INFO_MESSAGE = "bundle_key_info_message";
     public final static String BUNDLE_KEY_SERVICE_NAME = "bundle_key_service_name";
     public final static String BUNDLE_KEY_ERROR_MESSAGE = "bundle_key_error_message";
     public final static String BUNDLE_KEY_CONFIRM_MESSAGE = "bundle_key_confirm_message";
     public final static String BUNDLE_KEY_PARCELABLE = "bundle_key_parcelable";
     public final static String BUNDLE_KEY_ERROR_FATAL = "bundle_key_error_fatal";
     public final static String BUNDLE_KEY_USE_CONFIG_SERVER = "bundle_key_use_config_server";
+    public final static String BUNDLE_KEY_PROTOCOL_DEBUG = "bundle_key_protocol_debug";
+    public final static String BUNDLE_KEY_PUBLIC_KEY = "bundle_key_public_key";
+    public final static String BUNDLE_KEY_KEYSTORE_ALIAS = "bundle_key_keystore_alias";
 }

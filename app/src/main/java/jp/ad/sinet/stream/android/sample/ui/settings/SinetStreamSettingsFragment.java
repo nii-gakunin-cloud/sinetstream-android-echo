@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 National Institute of Informatics
+ * Copyright (c) 2021 National Institute of Informatics
  *
  *  Licensed to the Apache Software Foundation (ASF) under one
  *  or more contributor license agreements.  See the NOTICE file
@@ -22,9 +22,14 @@
 package jp.ad.sinet.stream.android.sample.ui.settings;
 
 import android.os.Bundle;
+import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceScreen;
+import androidx.preference.SwitchPreferenceCompat;
 
 import jp.ad.sinet.stream.android.sample.R;
 
@@ -40,7 +45,47 @@ public class SinetStreamSettingsFragment extends PreferenceFragmentCompat {
      *                           {@link PreferenceScreen} with this key.
      */
     @Override
-    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+    public void onCreatePreferences(
+            @Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         setPreferencesFromResource(R.xml.settings_sinetstream, rootKey);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        SwitchPreferenceCompat spc =
+                findPreference(getString(R.string.pref_key_toggle_sinetstream_manual_config));
+        Preference prefConfigServer =
+                findPreference(getString(R.string.pref_category_config_server));
+        Preference prefSinetStream =
+                findPreference(getString(R.string.pref_category_sinetstream));
+
+        if (spc != null && prefConfigServer != null && prefSinetStream != null) {
+            boolean isChecked1 = spc.isChecked();
+            prefConfigServer.setEnabled(!isChecked1);
+            prefSinetStream.setEnabled(isChecked1);
+
+            spc.setOnPreferenceChangeListener(
+                    new Preference.OnPreferenceChangeListener() {
+                        /**
+                         * Called when a preference has been changed by the user. This is called before the state
+                         * of the preference is about to be updated and before the state is persisted.
+                         *
+                         * @param preference The changed preference
+                         * @param newValue   The new value of the preference
+                         * @return {@code true} to update the state of the preference with the new value
+                         */
+                        @Override
+                        public boolean onPreferenceChange(
+                                @NonNull Preference preference, Object newValue) {
+                            boolean isChecked2 = (Boolean) newValue;
+                            prefConfigServer.setEnabled(!isChecked2);
+                            prefSinetStream.setEnabled(isChecked2);
+                            return true;
+                        }
+                    }
+            );
+        }
     }
 }

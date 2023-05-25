@@ -37,7 +37,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import jp.ad.sinet.stream.android.sample.R;
 import jp.ad.sinet.stream.android.sample.constants.BundleKeys;
-import jp.ad.sinet.stream.android.sample.ui.main.ErrorDialogFragment;
+import jp.ad.sinet.stream.android.sample.ui.dialogs.ErrorDialogFragment;
 
 public class DialogUtil {
     private final static String TAG = DialogUtil.class.getSimpleName();
